@@ -3,7 +3,7 @@ import { ScrollableTabView } from '@valdio/react-native-scrollable-tabview';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Share, { ShareSheet, Button } from "react-native-share";
 import RNFS from "react-native-fs";
-import RNFetchBlob from "rn-fetch-blob";
+// import RNFetchBlob from "rn-fetch-blob";
 
 import {
   StyleSheet,
