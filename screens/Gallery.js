@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
-import { Platform, StyleSheet, Text, View, TextInput, TouchableOpacity, Image, ToastAndroid, Alert, ImageBackground,ProgressBarAndroid,
+import {
+    Platform, StyleSheet, Text, View, TextInput, TouchableOpacity, Image, ToastAndroid, Alert, ImageBackground, ProgressBarAndroid,
     // ToastAndroid,
     PermissionsAndroid
-  } from "react-native";
+} from "react-native";
 import Icon from 'react-native-vector-icons/MaterialIcons';
 // import ImagePicker from 'react-native-image-picker';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -11,6 +12,7 @@ import RNFetchBlob from 'react-native-fetch-blob';
 const config = new Config();
 import Config from '../config';
 import Video from 'react-native-video';
+import RNBackgroundDownloader from 'react-native-background-downloader';
 
 
 import _ from 'lodash';
@@ -78,6 +80,31 @@ export async function request_storage_runtime_permission() {
     }
 }
 
+export async function downloadFile() {
+    console.log("FIRSt func")
+    try {
+        const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+            {
+                title: "Storage Permission",
+                message: "App needs access to memory to download the file "
+            }
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            Alert.alert("Storage Permission Granted.");
+            // this.actualDownload;
+        } else {
+            Alert.alert(
+                "Permission Denied!",
+                "You need to give storage permission to download the file"
+            );
+        }
+    } catch (err) {
+        console.warn(err);
+    }
+}
+
+
 export default class Gallery extends Component {
     constructor(props) {
         super(props)
@@ -91,7 +118,7 @@ export default class Gallery extends Component {
             imagePath: [],
             openVideo: false,
             videoName: '',
-            // paused: true,
+            paused: true,
             playVideo: false,
             progress: 0,
             loading: false,
@@ -104,7 +131,8 @@ export default class Gallery extends Component {
         // RNFFmpeg.execute('-i http://192.168.43.4/ReactFirstProject/images/song.jpeg -i http://192.168.43.4/ReactFirstProject/screens/music/frog.wav -c:v mpeg4 output.mp4').then(result => (console.log("RESULT:++++++++++++++++++++++++++",result)))
 
         this.pickImage();
-        request_storage_runtime_permission()
+        request_storage_runtime_permission();
+        downloadFile()
     }
 
 	/** 
@@ -240,9 +268,9 @@ export default class Gallery extends Component {
                 const value = response.data;
                 const data = value['data'];
                 console.log("RESPONSE:", JSON.parse(response.data), data);
-                const URL = 'http://192.168.43.4/blogbing_4Mar/blogbing/uploads/'+response.data
-                this.setState({ openVideo: true, videoName: JSON.parse(response.data)})
-                console.log("OPEN:",this.state.videoName)
+                const URL = 'http://192.168.43.4/blogbing_4Mar/blogbing/uploads/' + response.data
+                this.setState({ openVideo: true, videoName: JSON.parse(response.data) })
+                console.log("OPEN:", this.state.videoName)
                 return response
             })
             .catch({ status: 500, message: 'Internal Serevr Error' });
@@ -296,12 +324,12 @@ export default class Gallery extends Component {
 
     playVideo = () => {
         console.log("CALLINGGGGG")
-        this.setState({ paused: false, playVideo: false })
+        this.setState({ paused: false, playVideo: true })
         this.state.paused = false;
     }
 
     pauseVideo = () => {
-        this.setState({ paused: true, playVideo: true })
+        this.setState({ paused: true, playVideo: false })
     }
 
     actualDownload = () => {
@@ -310,6 +338,8 @@ export default class Gallery extends Component {
             progress: 0,
             loading: true
         });
+
+        // this.actualDownload;
         let dirs = RNFetchBlob.fs.dirs;
         RNFetchBlob.config({
             // add this option that makes response data to be stored as a file,
@@ -319,7 +349,7 @@ export default class Gallery extends Component {
         })
             .fetch(
                 "GET",
-                "http://www.usa-essays.com/blog/wp-content/uploads/2017/09/sample-5-1024x768.jpg",
+                "http://192.168.43.4/blogbing_4Mar/blogbing/uploads/video_lts.mp4",
                 {
                     //some headers ..
                 }
@@ -339,30 +369,29 @@ export default class Gallery extends Component {
                     ToastAndroid.BOTTOM
                 );
             });
+
     };
 
-    async downloadFile() {
-        console.log("FIRSt func")
-        try {
-            const granted = await PermissionsAndroid.request(
-                PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-                {
-                    title: "Storage Permission",
-                    message: "App needs access to memory to download the file "
-                }
-            );
-            if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-                this.actualDownload();
-            } else {
-                Alert.alert(
-                    "Permission Denied!",
-                    "You need to give storage permission to download the file"
-                );
-            }
-        } catch (err) {
-            console.warn(err);
-        }
-    }
+   dowloadVideoFile = () => RNBackgroundDownloader.download({
+        id: 'file123',
+        url: 'http://192.168.43.4/blogbing_4Mar/blogbing/uploads/video_lts.mp4',
+        destination: `${RNFetchBlob.fs.dirs.DownloadDir + "/video_"+ Math.floor(new Date().getTime()
+        + new Date().getSeconds() / 2)+".mp4"}`
+    }).begin((expectedBytes) => {
+        console.log(`Going to download ${expectedBytes} bytes!`);
+    }).progress((percent) => {
+        console.log(`Downloaded: ${percent * 100}%`);
+    }).done(() => {
+        ToastAndroid.showWithGravity(
+            "Your Video has been successfully downloaded to downloads folder!",
+            ToastAndroid.SHORT,
+            ToastAndroid.BOTTOM
+        );
+        console.log('Download is done!');
+    }).error((error) => {
+        console.log('Download canceled due to error: ', error);
+    });
+
 
     render() {
         console.log('this.state========================>', this.state.videoName);
@@ -385,27 +414,28 @@ export default class Gallery extends Component {
                     //     style={styles.saveVideo}
                     // />
                     <View style={styles.container}>
-                        <Icon name="save"
-                            size={30}
-                            style={{ position: 'relative' }}
-                            onPress={this.downloadFile}
-                        />
-                        <Video source={{ uri: 'http://192.168.43.4/blogbing_4Mar/blogbing/uploads/video_lts.mp4'}}   // Can be a URL or a local file.
+
+                        <Video source={{ uri: 'http://192.168.43.4/blogbing_4Mar/blogbing/uploads/video_lts.mp4' }}   // Can be a URL or a local file.
                             ref={(ref) => {
-                                 this.player = ref
+                                this.player = ref
                             }}
                             onBuffer={this.onBuffer}
                             onError={this.videoError}
-                            // paused={this.state.paused}
+                            paused={this.state.paused}
                             style={styles.backgroundVideo} />
-                        {/* {this.state.playVideo ? <Icon name="pause" size={40}
+                        <Icon name="save"
+                            size={30}
+                            style={{ position: 'relative' }}
+                            onPress={this.dowloadVideoFile}
+                        />
+                        {this.state.playVideo ? <Icon name="pause" size={40}
                             style={styles.saveVideo}
-                            onPress={this.pauseVideo}/> :
+                            onPress={this.pauseVideo} /> :
                             <Icon name="play-arrow"
                                 size={40}
                                 style={styles.saveVideo}
                                 onPress={this.playVideo}
-                            />} */}
+                            />}
                         {/* <Icon name="save"
                         size={30}
                         style={styles.saveVideo}
