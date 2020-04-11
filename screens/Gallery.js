@@ -5,59 +5,20 @@ import {
     PermissionsAndroid
 } from "react-native";
 import Icon from 'react-native-vector-icons/MaterialIcons';
-// import ImagePicker from 'react-native-image-picker';
 import ImagePicker from 'react-native-image-crop-picker';
-import ImgToBase64 from 'react-native-image-base64';
 import RNFetchBlob from 'react-native-fetch-blob';
 const config = new Config();
 import Config from '../config';
 import Video from 'react-native-video';
 import RNBackgroundDownloader from 'react-native-background-downloader';
-
-import RNFS from 'react-native-fs';
 import _ from 'lodash';
 import Sound from 'react-native-sound';
-// import RNFetchBlob from 'rn-fetch-blob';
-// import { videoshow } from 'videoshow';
 
 //Service
 import service from '../services/service';
 
-var images = [
-    '../images/song2.jpeg',
-    '../images/song3.jpeg',
-    '../images/song4.jpeg',
-    '../images/song5.jpeg'
-]
-var videoOptions = {
-    fps: 25,
-    loop: 5, // seconds
-    transition: true,
-    transitionDuration: 1, // seconds
-    videoBitrate: 1024,
-    videoCodec: 'libx264',
-    size: '640x?',
-    audioBitrate: '128k',
-    audioChannels: 2,
-    format: 'mp4',
-    pixelFormat: 'yuv420p'
-}
-
-
-// import {ffmpeg} from 'ffmpeg';
-// import {fs} from 'fs';
-
 
 var sound1;
-
-// const playList = [
-//     {
-//         title: 'Closer',
-//         isRequire: true,
-//         url: require('./music/closer.mp3'),
-//         imgPath: require('../images/song1.jpeg'),
-//     },
-// ]
 
 export async function request_storage_runtime_permission() {
 
@@ -129,8 +90,6 @@ export default class Gallery extends Component {
     }
 
     componentDidMount() {
-        // RNFFmpeg.execute('-i http://192.168.43.4/ReactFirstProject/images/song.jpeg -i http://192.168.43.4/ReactFirstProject/screens/music/frog.wav -c:v mpeg4 output.mp4').then(result => (console.log("RESULT:++++++++++++++++++++++++++",result)))
-
         this.pickImage();
         request_storage_runtime_permission();
         downloadFile()
@@ -152,35 +111,18 @@ export default class Gallery extends Component {
 
             this.setState({ ImageSource: images, base64String: images[0].path })
             console.log("ImageSource::::::::::::::::", this.state.ImageSource);
-            images.forEach((item) => {
-                let image = {
-                    uri: item.path,
-                    // width: item.width,
-                    // height: item.height,
-                }
-                // this.setState({
-                //     file: item.path
-                // })
-            })
+            // images.forEach((item) => {
+            //     let image = {
+            //         uri: item.path,
+            //         // width: item.width,
+            //         // height: item.height,
+            //     }
+            //     // this.setState({
+            //     //     file: item.path
+            //     // })
+            // })
             this.downloadVideo();
         });
-        // this.stopSound()
-        // ImagePicker.launchImageLibrary(options, (response) => {
-        //     if (response.didCancel) {
-        //         console.log('User cancelled image picker');
-        //     } else if (response.error) {
-        //         console.log('ImagePicker Error: ', response.error);
-        //     } else if (response.customButton) {
-        //         console.log('User tapped custom button: ', response.customButton);
-        //     } else {
-        //         const source = { uri: response.uri }
-        //         this.setState({ file: response.uri, imageName: response.fileName, ButtonStateHolder: false,ImageSource:response });
-        //         if (this.state.file) {
-        //             this.playSound()
-        //             this.downloadVideo();
-        //         }
-        //     }
-        // })
     };
 
     playSound() {
@@ -229,39 +171,13 @@ export default class Gallery extends Component {
     downloadVideo = () => {
         console.log("HELLO", this.state.ImageSource)
         var object = {};
-        // ImgToBase64.getBase64String('file://http://192.168.43.4/MusicApp-Backend/uploads/images_1586496713912')
-        //     .then(base64String => {
-            // RNFS.readFile(this.state.file,'base64').then(res => {
-                // console.log("RES:",res)
-                // object['data'] = base64String,
-                // this.state.imagePath.push({'base':base64String}),
-                // console.log("BASE", base64String);
                 const array = this.state.ImageSource;
-
-                // // var rest = array[0].path.substring(0, array[0].path.lastIndexOf("/") + 1);
                 var last = array[0].path.substring(array[0].path.lastIndexOf("/") + 1, array[0].path.length);
-                // console.log(rest);
                 console.log(last);
-
-                // RNFetchBlob.fetch( 'POST', 'http://192.168.43.4:3000/make-video', { 'Content-Type': 'application/json'}, JSON.stringify({content: this.state.file}) )
-                //  .then(response => { console.log(response.json()); })
                 RNFetchBlob.fetch('POST', 'http://192.168.43.4:3000/make-video', {
-                    // headers: {
-                        // 'Accept': 'application/json',
                         'Content-Type': 'multipart/form-data',
-
-                    //    },
                 },
                     [
-                        // this.state.ImageSource.map(i =>({
-                        //         name: 'content',
-                        //         data: 'this.state.content'
-                        //     },{
-                        //     name: 'images',
-                        //     filename: i.path.substring(i.path.lastIndexOf("/") + 1, i.path.length),// filename sadece ios da var, o yüzden android de path dan çıkarıyoruz
-                        //     data: RNFetchBlob.wrap(i.path)
-                        // })),
-
                         {
                             name: 'content',
                             data: 'this.state.ImageSource[0]'
@@ -272,11 +188,6 @@ export default class Gallery extends Component {
                             type:this.state.ImageSource[0].mime,
                             data: RNFetchBlob.wrap(this.state.ImageSource[0].path)
                         },
-                        // {
-                        //     name: 'images',
-                        //     filename: last,
-                        //     data: RNFetchBlob.wrap(array[0].path)
-                        // },
                     ]).then(response => {
                         const value = response.data;
                         const data = value['data'];
@@ -287,9 +198,6 @@ export default class Gallery extends Component {
                         return response
                     })
                     .catch({ status: 500, message: 'Internal Serevr Error' });
-            // }).catch(err => {
-            //     console.log("ERROR:", err)
-            // })
     }
 
     downloadImage = () => {
