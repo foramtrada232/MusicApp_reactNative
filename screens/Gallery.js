@@ -14,7 +14,7 @@ import Config from '../config';
 import Video from 'react-native-video';
 import RNBackgroundDownloader from 'react-native-background-downloader';
 
-
+import RNFS from 'react-native-fs';
 import _ from 'lodash';
 import Sound from 'react-native-sound';
 // import RNFetchBlob from 'rn-fetch-blob';
@@ -122,7 +122,8 @@ export default class Gallery extends Component {
             playVideo: false,
             progress: 0,
             loading: false,
-            url: ''
+            url: '',
+            base64String: ''
         };
         this.playSound = this.playSound.bind(this)
     }
@@ -149,7 +150,7 @@ export default class Gallery extends Component {
             multiple: true
         }).then(images => {
 
-            this.setState({ ImageSource: images })
+            this.setState({ ImageSource: images, base64String: images[0].path })
             console.log("ImageSource::::::::::::::::", this.state.ImageSource);
             images.forEach((item) => {
                 let image = {
@@ -157,9 +158,9 @@ export default class Gallery extends Component {
                     // width: item.width,
                     // height: item.height,
                 }
-                this.setState({
-                    file: item.path
-                })
+                // this.setState({
+                //     file: item.path
+                // })
             })
             this.downloadVideo();
         });
@@ -173,9 +174,10 @@ export default class Gallery extends Component {
         //         console.log('User tapped custom button: ', response.customButton);
         //     } else {
         //         const source = { uri: response.uri }
-        //         this.setState({ file: response.uri, imageName: response.fileName, ButtonStateHolder: false });
+        //         this.setState({ file: response.uri, imageName: response.fileName, ButtonStateHolder: false,ImageSource:response });
         //         if (this.state.file) {
         //             this.playSound()
+        //             this.downloadVideo();
         //         }
         //     }
         // })
@@ -226,54 +228,68 @@ export default class Gallery extends Component {
 
     downloadVideo = () => {
         console.log("HELLO", this.state.ImageSource)
-        // ImgToBase64.getBase64String(this.state.ImageSource[0].path)
-        //     .then(base64String =>
-        // var object = {};
-        // object['data'] = base64String,
-        // this.state.imagePath.push({'base':base64String}),
-        // console.log("BASE",this.state.imagePath)
-        const array = this.state.ImageSource;
-        var rest = array[0].path.substring(0, array[0].path.lastIndexOf("/") + 1);
-        var last = array[0].path.substring(array[0].path.lastIndexOf("/") + 1, array[0].path.length);
-        // console.log(rest);
-        console.log(last);
-        RNFetchBlob.fetch('POST', 'http://192.168.43.4:3000/made-video', {
-            'Content-Type': 'multipart/form-data',
-        },
-            [
-                // this.state.ImageSource.map(i =>({
-                //         name: 'content',
-                //         data: 'this.state.content'
-                //     },{
-                //     name: 'images',
-                //     filename: i.path.substring(i.path.lastIndexOf("/") + 1, i.path.length),// filename sadece ios da var, o yüzden android de path dan çıkarıyoruz
-                //     data: RNFetchBlob.wrap(i.path)
-                // })),
+        var object = {};
+        // ImgToBase64.getBase64String('file://http://192.168.43.4/MusicApp-Backend/uploads/images_1586496713912')
+        //     .then(base64String => {
+            // RNFS.readFile(this.state.file,'base64').then(res => {
+                // console.log("RES:",res)
+                // object['data'] = base64String,
+                // this.state.imagePath.push({'base':base64String}),
+                // console.log("BASE", base64String);
+                const array = this.state.ImageSource;
 
-                {
-                    name: 'content',
-                    data: 'this.state.content'
+                // // var rest = array[0].path.substring(0, array[0].path.lastIndexOf("/") + 1);
+                var last = array[0].path.substring(array[0].path.lastIndexOf("/") + 1, array[0].path.length);
+                // console.log(rest);
+                console.log(last);
+
+                // RNFetchBlob.fetch( 'POST', 'http://192.168.43.4:3000/make-video', { 'Content-Type': 'application/json'}, JSON.stringify({content: this.state.file}) )
+                //  .then(response => { console.log(response.json()); })
+                RNFetchBlob.fetch('POST', 'http://192.168.43.4:3000/make-video', {
+                    // headers: {
+                        // 'Accept': 'application/json',
+                        'Content-Type': 'multipart/form-data',
+
+                    //    },
                 },
-                {
-                    name: 'images',
-                    filename: last,
-                    data: RNFetchBlob.wrap(array[0].path)
-                },
-                // {
-                //     name: 'images',
-                //     filename: last,
-                //     data: RNFetchBlob.wrap(array[0].path)
-                // },
-            ]).then(response => {
-                const value = response.data;
-                const data = value['data'];
-                console.log("RESPONSE:", JSON.parse(response.data), data);
-                const URL = 'http://192.168.43.4/blogbing_4Mar/blogbing/uploads/' + response.data
-                this.setState({ openVideo: true, videoName: JSON.parse(response.data) })
-                console.log("OPEN:", this.state.videoName)
-                return response
-            })
-            .catch({ status: 500, message: 'Internal Serevr Error' });
+                    [
+                        // this.state.ImageSource.map(i =>({
+                        //         name: 'content',
+                        //         data: 'this.state.content'
+                        //     },{
+                        //     name: 'images',
+                        //     filename: i.path.substring(i.path.lastIndexOf("/") + 1, i.path.length),// filename sadece ios da var, o yüzden android de path dan çıkarıyoruz
+                        //     data: RNFetchBlob.wrap(i.path)
+                        // })),
+
+                        {
+                            name: 'content',
+                            data: 'this.state.ImageSource[0]'
+                        },
+                        {
+                            name: 'images',
+                            filename: last,
+                            type:this.state.ImageSource[0].mime,
+                            data: RNFetchBlob.wrap(this.state.ImageSource[0].path)
+                        },
+                        // {
+                        //     name: 'images',
+                        //     filename: last,
+                        //     data: RNFetchBlob.wrap(array[0].path)
+                        // },
+                    ]).then(response => {
+                        const value = response.data;
+                        const data = value['data'];
+                        console.log("RESPONSE:", JSON.parse(response.data), data);
+                        const URL = 'http://192.168.43.4/MusicApp-Backend/uploads/' + response.data
+                        this.setState({ openVideo: true, videoName: JSON.parse(response.data) })
+                        console.log("OPEN:", this.state.videoName)
+                        return response
+                    })
+                    .catch({ status: 500, message: 'Internal Serevr Error' });
+            // }).catch(err => {
+            //     console.log("ERROR:", err)
+            // })
     }
 
     downloadImage = () => {
@@ -296,7 +312,7 @@ export default class Gallery extends Component {
             }
         }
         console.log("IMAGE_URL:", image_URL);
-        config(options).fetch('GET', 'http://192.168.43.4/blogbing_4Mar/blogbing/uploads/videoLatestF.mp4').then((res) => {
+        config(options).fetch('GET', 'http://192.168.43.4/MusicApp-Backend/uploads/videoLatestF.mp4').then((res) => {
             // RNFFmpeg.execute('-i http://192.168.43.4/ReactFirstProject/screens/music/frog.wav -i http://192.168.43.4/ReactFirstProject/images/song.jpeg -c:v mpeg4 output.mp4').then(result => (console.log("RESULT:++++++++++++++++++++++++++",result)))
             console.log("URL:", res);
 
@@ -349,7 +365,7 @@ export default class Gallery extends Component {
         })
             .fetch(
                 "GET",
-                "http://192.168.43.4/blogbing_4Mar/blogbing/uploads/video_lts.mp4",
+                "http://192.168.43.4/MusicApp-Backend/uploads/video.mp4",
                 {
                     //some headers ..
                 }
@@ -372,11 +388,11 @@ export default class Gallery extends Component {
 
     };
 
-   dowloadVideoFile = () => RNBackgroundDownloader.download({
+    dowloadVideoFile = () => RNBackgroundDownloader.download({
         id: 'file123',
-        url: 'http://192.168.43.4/blogbing_4Mar/blogbing/uploads/video_lts.mp4',
-        destination: `${RNFetchBlob.fs.dirs.DownloadDir + "/video_"+ Math.floor(new Date().getTime()
-        + new Date().getSeconds() / 2)+".mp4"}`
+        url: 'http://192.168.43.4/MusicApp-Backend/uploads/video.mp4',
+        destination: `${RNFetchBlob.fs.dirs.DownloadDir + "/video_" + Math.floor(new Date().getTime()
+            + new Date().getSeconds() / 2) + ".mp4"}`
     }).begin((expectedBytes) => {
         console.log(`Going to download ${expectedBytes} bytes!`);
     }).progress((percent) => {
@@ -397,10 +413,7 @@ export default class Gallery extends Component {
         console.log('this.state========================>', this.state.videoName);
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                {/* <Icon name="save"
-                    size={30}
-                    style={styles.saveVideo}
-                /> */}
+              
                 {this.state.loading ? (
                     <ProgressBarAndroid
                         styleAttr="Large"
@@ -415,7 +428,7 @@ export default class Gallery extends Component {
                     // />
                     <View style={styles.container}>
 
-                        <Video source={{ uri: 'http://192.168.43.4/blogbing_4Mar/blogbing/uploads/video_lts.mp4' }}   // Can be a URL or a local file.
+                        <Video source={{ uri: 'http://192.168.43.4/MusicApp-Backend/uploads/video.mp4' }}   // Can be a URL or a local file.
                             ref={(ref) => {
                                 this.player = ref
                             }}
