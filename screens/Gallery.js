@@ -220,7 +220,7 @@ export default class Gallery extends Component {
             }
         }
         console.log("IMAGE_URL:", image_URL);
-        config(options).fetch('GET', 'http://192.168.43.4/MusicApp-Backend/uploads/videoLatestF.mp4').then((res) => {
+        config(options).fetch('GET', 'https://blogbing.herokuapp.com/uploads/videoLatestF.mp4').then((res) => {
             // RNFFmpeg.execute('-i http://192.168.43.4/ReactFirstProject/screens/music/frog.wav -i http://192.168.43.4/ReactFirstProject/images/song.jpeg -c:v mpeg4 output.mp4').then(result => (console.log("RESULT:++++++++++++++++++++++++++",result)))
             console.log("URL:", res);
 
@@ -273,7 +273,7 @@ export default class Gallery extends Component {
         })
             .fetch(
                 "GET",
-                "http://192.168.43.4/MusicApp-Backend/uploads/video.mp4",
+                "https://blogbing.herokuapp.com/uploads/video.mp4",
                 {
                     //some headers ..
                 }
@@ -298,7 +298,7 @@ export default class Gallery extends Component {
 
     dowloadVideoFile = () => RNBackgroundDownloader.download({
         id: 'file123',
-        url: 'http://192.168.43.4/MusicApp-Backend/uploads/video.mp4',
+        url: 'http://192.168.43.4/MusicApp-Backend/uploads/'+this.state.videoName,
         destination: `${RNFetchBlob.fs.dirs.DownloadDir + "/video_" + Math.floor(new Date().getTime()
             + new Date().getSeconds() / 2) + ".mp4"}`
     }).begin((expectedBytes) => {
@@ -336,7 +336,7 @@ export default class Gallery extends Component {
                     // />
                     <View style={styles.container}>
 
-                        <Video source={{ uri: 'http://192.168.43.4/MusicApp-Backend/uploads/video.mp4' }}   // Can be a URL or a local file.
+                        <Video source={{ uri: 'http://192.168.43.4/MusicApp-Backend/uploads/'+this.state.videoName }}   // Can be a URL or a local file.
                             ref={(ref) => {
                                 this.player = ref
                             }}
