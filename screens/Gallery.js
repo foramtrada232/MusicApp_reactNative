@@ -2,44 +2,43 @@ import React, { Component } from 'react';
 import {
     Platform, StyleSheet, Text, View, TextInput, TouchableOpacity, Image, ToastAndroid, Alert, ImageBackground, ProgressBarAndroid,
     // ToastAndroid,
-    PermissionsAndroid
+    PermissionsAndroid, ActivityIndicator
 } from "react-native";
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import ImagePicker from 'react-native-image-crop-picker';
 import RNFetchBlob from 'react-native-fetch-blob';
-const config = new Config();
-import Config from '../config';
 import Video from 'react-native-video';
 import RNBackgroundDownloader from 'react-native-background-downloader';
 import _ from 'lodash';
 import Sound from 'react-native-sound';
-
+import Config from '../config';
+const config = new Config();
 //Service
 import service from '../services/service';
 
 
 var sound1;
 
-export async function request_storage_runtime_permission() {
+// export async function request_storage_runtime_permission() {
 
-    try {
-        const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-            {
-                'title': 'ReactNativeCode Storage Permission',
-                'message': 'ReactNativeCode App needs access to your storage to download Photos.'
-            }
-        )
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            Alert.alert("Storage Permission Granted.");
-        }
-        else {
-            Alert.alert("Storage Permission Not Granted");
-        }
-    } catch (err) {
-        console.warn(err)
-    }
-}
+//     try {
+//         const granted = await PermissionsAndroid.request(
+//             PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+//             {
+//                 'title': 'ReactNativeCode Storage Permission',
+//                 'message': 'ReactNativeCode App needs access to your storage to download Photos.'
+//             }
+//         )
+//         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+//             Alert.alert("Storage Permission Granted.......");
+//         }
+//         else {
+//             Alert.alert("Storage Permission Not Granted");
+//         }
+//     } catch (err) {
+//         console.warn(err)
+//     }
+// }
 
 export async function downloadFile() {
     console.log("FIRSt func")
@@ -53,6 +52,7 @@ export async function downloadFile() {
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
             Alert.alert("Storage Permission Granted.");
+            // this.pickImage();
             // this.actualDownload;
         } else {
             Alert.alert(
@@ -84,14 +84,15 @@ export default class Gallery extends Component {
             progress: 0,
             loading: false,
             url: '',
-            base64String: ''
+            base64String: '',
+            isLoaded: false,
         };
         this.playSound = this.playSound.bind(this)
     }
 
     componentDidMount() {
         this.pickImage();
-        request_storage_runtime_permission();
+        // request_storage_runtime_permission();
         downloadFile()
     }
 
@@ -174,7 +175,8 @@ export default class Gallery extends Component {
                 const array = this.state.ImageSource;
                 var last = array[0].path.substring(array[0].path.lastIndexOf("/") + 1, array[0].path.length);
                 console.log(last);
-                RNFetchBlob.fetch('POST', 'http://192.168.43.4:3000/make-video', {
+                console.log(config.getBaseUrl())
+                RNFetchBlob.fetch('POST', config.getBaseUrl()+'make-video', {
                         'Content-Type': 'multipart/form-data',
                 },
                     [
@@ -191,9 +193,9 @@ export default class Gallery extends Component {
                     ]).then(response => {
                         const value = response.data;
                         const data = value['data'];
-                        console.log("RESPONSE:", JSON.parse(response.data), data);
-                        const URL = 'http://192.168.43.4/MusicApp-Backend/uploads/' + response.data
-                        this.setState({ openVideo: true, videoName: JSON.parse(response.data) })
+                        console.log("RESPONSE:", response.data, response);
+                        // const URL = 'https://blogbing.herokuapp.com/uploads/' + response.data
+                        this.setState({ openVideo: true, videoName: response.data, isLoaded: true })
                         console.log("OPEN:", this.state.videoName)
                         return response
                     })
@@ -298,7 +300,7 @@ export default class Gallery extends Component {
 
     dowloadVideoFile = () => RNBackgroundDownloader.download({
         id: 'file123',
-        url: 'http://192.168.43.4/MusicApp-Backend/uploads/'+this.state.videoName,
+        url: config.getMediaUrl()+this.state.videoName,
         destination: `${RNFetchBlob.fs.dirs.DownloadDir + "/video_" + Math.floor(new Date().getTime()
             + new Date().getSeconds() / 2) + ".mp4"}`
     }).begin((expectedBytes) => {
@@ -321,8 +323,9 @@ export default class Gallery extends Component {
         console.log('this.state========================>', this.state.videoName);
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              
-                {this.state.loading ? (
+                {/* {!this.state.isLoaded ? }
+               <ActivityIndicator size="large" color="#0000ff" /> */}
+                {!this.state.isLoaded ? (
                     <ProgressBarAndroid
                         styleAttr="Large"
                         indeterminate={false}
@@ -336,7 +339,7 @@ export default class Gallery extends Component {
                     // />
                     <View style={styles.container}>
 
-                        <Video source={{ uri: 'http://192.168.43.4/MusicApp-Backend/uploads/'+this.state.videoName }}   // Can be a URL or a local file.
+                        <Video source={{ uri: config.getMediaUrl()+this.state.videoName }}   // Can be a URL or a local file.
                             ref={(ref) => {
                                 this.player = ref
                             }}
@@ -344,10 +347,15 @@ export default class Gallery extends Component {
                             onError={this.videoError}
                             paused={this.state.paused}
                             style={styles.backgroundVideo} />
-                        <Icon name="save"
+                        <Icon name="arrow-downward"
                             size={30}
-                            style={{ position: 'relative' }}
+                            style={styles.downloadArrow}
                             onPress={this.dowloadVideoFile}
+                        />
+                         <Icon name="save"
+                            size={30}
+                            style={styles.ChangeImageIcon}
+                            onPress={this.pickImage}
                         />
                         {this.state.playVideo ? <Icon name="pause" size={40}
                             style={styles.saveVideo}
@@ -444,14 +452,14 @@ const styles = StyleSheet.create({
         marginRight: 'auto'
     },
     ChangeImageIcon: {
-        textAlign: 'right',
-        marginTop: 10,
+        marginTop: -40,
         marginLeft: 'auto',
-        marginRight: 10,
         padding: 5,
+        marginRight: 45,
         color: '#000000',
-        backgroundColor: '#CBCFD5',
+        backgroundColor: 'red',
         borderRadius: 50,
+        position: 'relative'
     },
     saveVideo: {
         textAlign: 'center',
@@ -473,5 +481,15 @@ const styles = StyleSheet.create({
         backgroundColor: '#CBCFD5',
         borderRadius: 50,
     },
+    downloadArrow: {
+        textAlign: 'center',
+        marginTop: -5,
+        marginLeft: 'auto',
+        padding: 5,
+        color: '#000000',
+        backgroundColor: 'red',
+        borderRadius: 50,
+        position: 'relative'
+    }
 });
 
