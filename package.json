@@ -13,7 +13,7 @@
     "@valdio/react-native-scrollable-tabview": "^0.8.12",
     "i": "^0.3.6",
     "link-react": "^3.0.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "npm": "^6.14.4",
     "react": "16.9.0",
     "react-grid-system": "^6.3.0",
